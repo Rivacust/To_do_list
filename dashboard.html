@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - TaskMaster</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">TaskMaster</div>
+    <ul class="nav-links">
+      <li><a href="#">Dashboard</a></li>
+      <li><a href="#">Profile</a></li>
+      <li><a href="#" id="logoutBtn">Logout</a></li>
+    </ul>
+  </nav>
+
+  <!-- Welcome Section -->
+  <header class="dashboard-header">
+    <h1>Welcome, <span id="userName">User</span>!</h1>
+    <p>Manage your tasks efficiently and stay productive.</p>
+  </header>
+
+  <!-- Task Manager Section -->
+  <section class="task-manager">
+    <div class="input-area">
+      <input type="text" id="taskInput" placeholder="Enter a new task">
+      <button id="addBtn">Add Task</button>
+    </div>
+    <ul id="taskList"></ul>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 TaskMaster. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const user_id = localStorage.getItem('user_id');
+    const taskList = document.getElementById('taskList');
+    const taskInput = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addBtn');
+    const userNameEl = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // Load tasks
+    async function loadTasks() {
+      taskList.innerHTML = '';
+      const res = await fetch(`http://127.0.0.1:5000/tasks/${user_id}`);
+      const tasks = await res.json();
+      tasks.forEach(t => {
+        const li = document.createElement('li');
+        li.classList.add('task-item');
+
+        const span = document.createElement('span');
+        span.textContent = t.title;
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.classList.add('delete-btn');
+        delBtn.onclick = async () => {
+          const res = await fetch(`http://127.0.0.1:5000/tasks/${t._id}`, { method: 'DELETE' });
+          if (res.ok) loadTasks();
+          else alert("Failed to delete task");
+        };
+
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        taskList.appendChild(li);
+      });
+    }
+
+    // Add new task
+    addBtn.addEventListener('click', async () => {
+      const title = taskInput.value.trim();
+      if (!title) return;
+      await fetch(`http://127.0.0.1:5000/tasks/${user_id}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title})
+      });
+      taskInput.value = '';
+      loadTasks();
+    });
+
+    // Fetch user name
+    async function loadUserName() {
+      const res = await fetch(`http://127.0.0.1:5000/users/${user_id}`);
+      if (res.ok) {
+        const user = await res.json();
+        userNameEl.textContent = user.name;
+      }
+    }
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('user_id');
+      window.location.href = 'index.html';
+    });
+
+    // Load tasks and user on page load
+    loadTasks();
+    loadUserName();
+  </script>
+</body>
+</html>
